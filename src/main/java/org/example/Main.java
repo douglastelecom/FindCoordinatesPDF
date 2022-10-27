@@ -1,9 +1,7 @@
 package org.example;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,13 +9,14 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        String fileName = "/home/douglas/Documentos/ataTeste.pdf";
+        String fileName = "/home/residencia/Documentos/atatestepage2.pdf";
         PDDocument document = PDDocument.load(new File(fileName));
-        printSubwords(document, "DOUGLAS");
+        List<Object> coordinates = getCoordinates(document, "RONALDO MEDEIROS DE ARAUJO");
+        System.out.println("Na página " + coordinates.get(0) + " e coordenada y:" + coordinates.get(1));
 
     }
 
-    static List<TextPositionSequence> findSubwords(PDDocument document, int page, String searchTerm) throws IOException {
+    static List<TextPositionSequence> findWords(PDDocument document, int page, String searchTerm) throws IOException {
         final List<TextPositionSequence> hits = new ArrayList<TextPositionSequence>();
         PDFTextStripper stripper = new PDFTextStripper() {
             @Override
@@ -42,11 +41,12 @@ public class Main {
         return hits;
     }
 
-    static void printSubwords(PDDocument document, String searchTerm) throws IOException {
+    static List<Object> getCoordinates(PDDocument document, String searchTerm) throws IOException {
+        List<Object> coordinates = new ArrayList<>();
         float participacoesY = 0;
         Integer participacoesPage = 0;
         for (Integer page = 1; page <= document.getNumberOfPages(); page++) {
-            List<TextPositionSequence> hits = findSubwords(document, page, "4. Participações");
+            List<TextPositionSequence> hits = findWords(document, page, "4. Participações");
             if (hits.size() >= 1) {
                 participacoesY = hits.get(0).getY();
                 participacoesPage = page;
@@ -54,25 +54,27 @@ public class Main {
             }
         }
 
-        System.out.printf("* Procurando por '%s'\n", searchTerm);
         for (Integer page = participacoesPage; page <= document.getNumberOfPages(); page++) {
-            List<TextPositionSequence> hits = findSubwords(document, page, searchTerm);
+            List<TextPositionSequence> hits = findWords(document, page, searchTerm);
             if (page.equals(participacoesPage)) {
                 for (TextPositionSequence hit : hits) {
                     if (hits.size() >= 1 && hit.getY() >= participacoesY) {
-                        System.out.printf("  Página %s em x=%s e y=%s \n", page, hit.getX(), hit.getY());
-                        page = document.getNumberOfPages() + 1;
-                        break;
+                        coordinates.add(0, page);
+                        coordinates.add(1, hit.getY());
+                        return coordinates;
                     }
                 }
             } else {
                 for (TextPositionSequence hit : hits) {
-                    if (hits.size() >= 1)
-                        System.out.printf("  Página %s em x=%s e y=%s \n", page, hit.getX(), hit.getY());
-                    page = document.getNumberOfPages() + 1;
-                    break;
+                    if (hits.size() >= 1) {
+                        coordinates.add(0, page);
+                        coordinates.add(1, hit.getY());
+                        return coordinates;
+                    }
                 }
             }
         }
+        return coordinates;
     }
+
 }
